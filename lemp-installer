@@ -1,0 +1,48 @@
+#!/bin/bash
+# lemp installer
+# author: techgaun
+
+prog=$(basename $0)
+default_err="Unknown error occurred"
+desc="A generic lemp stack installer for linux distributions"
+author="techgaun"
+version="0.1"
+red='\033[0;31m'
+green='\033[0;32m'
+nc='\033[0m'
+
+error() {
+    msg="${1:-$default_err}"
+    echo -e "${red}${msg}${nc}"
+    exit 1
+}
+
+msg() {
+    msg="${1:-nothing}"
+    echo -e "${green}${msg}${nc}"
+}
+
+is_debian() {
+    [[ -f "/usr/bin/apt-get" ]]
+}
+
+is_rhel() {
+    [[ -f "/usr/bin/yum" ]]
+}
+
+is_root() {
+    [[ "$(id -u)" == "0" ]]
+}
+
+main() {
+    is_root || error "Please run this script as a root user"
+    if is_debian; then
+        msg "Your system is debian flavor"
+    elif is_rhel; then
+        msg "Your system is rhel flavor"
+    else
+        error "Unknown distribution. exiting..."
+    fi
+}
+
+main
