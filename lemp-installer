@@ -48,16 +48,13 @@ install_debian() {
 
 install_rhel() {
     version=$(rpm -qa --queryformat '%{VERSION}\n' '(redhat|sl|slf|centos|oraclelinux)-release(|-server|-workstation|-client|-computenode)')
-    distro=
-    if which python; then
-        distro=$(python -mplatform)
-        if grep -i "centos" "${distro}"; then
-            distro=centos
-        elif grep -i "rhel" "${distro}"; then
-            distro=rhel
-        else
-            error "Unsupported distribution"
-        fi
+    distro=$(python -mplatform || head -n1 /etc/os-release)
+    if grep -i "centos" <<< "${distro}"; then
+        distro="centos"
+    elif grep -i "rhel" <<< "${distro}"; then
+        distro="rhel"
+    else
+        error "Unsupported distribution"
     fi
     arch=$(rpm -qa --queryformat '%{ARCH}\n' '(redhat|sl|slf|centos|oraclelinux)-release(|-server|-workstation|-client|-computenode)')
     cat > /etc/yum.repos.d/nginx.repo <<EOF
