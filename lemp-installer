@@ -34,12 +34,53 @@ is_root() {
     [[ "$(id -u)" == "0" ]]
 }
 
+install_debian() {
+    codename=$(lsb_release -sc)
+    distro=$(lsb_release -si)
+    distro=${distro,,}
+    if ! grep -i "nginx" /etc/apt/sources.list; then
+        echo "deb http://nginx.org/packages/${distro}/ ${codename} nginx" >> /etc/apt/sources.list
+    fi
+    apt-get -y update
+    apt-get -y --no-install-recommends install nginx imagemagick-common mysql-server php5 php5-mysql php-apc \
+        php5-cli php5-common php5-curl php5-fpm php5-gd php5-imagick mcrypt php5-imap php5-json php5-mcrypt 
+}
+
+install_rhel() {
+    version=$(rpm -qa --queryformat '%{VERSION}\n' '(redhat|sl|slf|centos|oraclelinux)-release(|-server|-workstation|-client|-computenode)')
+    distro=
+    if which python; then
+        distro=$(python -mplatform)
+        if grep -i "centos" "${distro}"; then
+            distro=centos
+        elif grep -i "rhel" "${distro}"; then
+            distro=rhel
+        else
+            error "Unsupported distribution"
+        fi
+    fi
+    arch=$(rpm -qa --queryformat '%{ARCH}\n' '(redhat|sl|slf|centos|oraclelinux)-release(|-server|-workstation|-client|-computenode)')
+    cat > /etc/yum.repos.d/nginx.repo <<EOF
+[nginx]
+name=nginx repo
+baseurl=http://nginx.org/packages/${distro}/${version}/\$basearch/
+gpgcheck=0
+enabled=1
+EOF
+
+    yum -y update
+    yum install -y --no-install-recommends nginx php mysql-server php-mysql php-apc php-cli php-common php-curl php-fpm php-gd php-mcrypt \
+        php-imap php-json php-pecl-imagick libmcrypt ImageMagick
+}
+
 main() {
     is_root || error "Please run this script as a root user"
     if is_debian; then
         msg "Your system is debian flavor"
+        install_debian
     elif is_rhel; then
         msg "Your system is rhel flavor"
+        install_rhel
     else
         error "Unknown distribution. exiting..."
     fi
